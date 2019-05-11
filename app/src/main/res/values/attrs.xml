@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="LocationView">
+        <attr name="outColor" format="color"/>
+        <attr name="insideColor" format="color"/>
+        <attr name="lineColor" format="color"/>
+        <attr name="during" format="integer"/>
+    </declare-styleable>
+
+</resources>
