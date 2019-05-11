@@ -30,6 +30,7 @@ public class LocationView extends View {
     private Paint linePaint;
     private Paint wavePaint;
     private int outRadius;
+    private int circleHeigh;
     private int inSideRadius;
     private int waveRadius = 100;
     private int centerX;
@@ -38,7 +39,7 @@ public class LocationView extends View {
 
 
     public LocationView(Context context) {
-        super(context);
+        this(context, null);
     }
 
     public LocationView(Context context, AttributeSet attrs) {
@@ -47,11 +48,9 @@ public class LocationView extends View {
 
     public LocationView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-
         final Resources resources = getResources();
-
         TypedArray typedArray = context.getTheme().obtainStyledAttributes(attrs,
-                R.styleable.LocationView , defStyleAttr, defStyleAttr);
+                R.styleable.LocationView, defStyleAttr, defStyleAttr);
         int indexCount = typedArray.getIndexCount();
 
         for (int i = 0; i < indexCount; i++) {
@@ -62,7 +61,7 @@ public class LocationView extends View {
                 case R.styleable.LocationView_outColor:
                     outColor = Objects
                             .requireNonNull(typedArray.getColorStateList(i))
-                            .getColorForState(getDrawableState(),0);
+                            .getColorForState(getDrawableState(), 0);
                     break;
                 case R.styleable.LocationView_insideColor:
                     insideColor = Objects
@@ -103,7 +102,6 @@ public class LocationView extends View {
         wavePaint.setAlpha(100);
     }
 
-
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -111,45 +109,99 @@ public class LocationView extends View {
         inSideRadius = outRadius / 4;
         centerX = w / 2;
         centerY = h / 2;
+        circleHeigh = w / 2;
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int width = measureWidth(getSuggestedMinimumWidth(), widthMeasureSpec);
+        int height = measureHeight(getSuggestedMinimumHeight(), heightMeasureSpec);
+        setMeasuredDimension(width, height);
+    }
+
+    private int measureWidth(int defaultWidth, int measereSpec) {
+        int specMode = MeasureSpec.getMode(measereSpec);
+        int specSize = MeasureSpec.getSize(measereSpec);
+        switch (specMode) {
+            case MeasureSpec.AT_MOST:
+                defaultWidth = dip2px(getContext(), 150);
+                break;
+            case MeasureSpec.EXACTLY:
+                defaultWidth = specSize;
+                break;
+            case MeasureSpec.UNSPECIFIED:
+                defaultWidth = Math.max(defaultWidth, specSize);
+                break;
+        }
+        return defaultWidth;
+    }
+
+    private int measureHeight(int defaultHeight, int measereSpec) {
+        int specMode = MeasureSpec.getMode(measereSpec);
+        int specSize = MeasureSpec.getSize(measereSpec);
+        switch (specMode) {
+            case MeasureSpec.AT_MOST:
+                defaultHeight = dip2px(getContext(), 250);
+                break;
+            case MeasureSpec.EXACTLY:
+                defaultHeight = specSize;
+                break;
+            case MeasureSpec.UNSPECIFIED:
+                defaultHeight = Math.max(defaultHeight, specSize);
+                break;
+        }
+        return defaultHeight;
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-        canvas.drawCircle(centerX , outRadius , outRadius, outPaint );
-        canvas.drawCircle(centerX , outRadius , inSideRadius, insidePaint);
-        drawWave(canvas);
         drawLine(canvas);
+        canvas.drawCircle(centerX, circleHeigh, outRadius, outPaint);
+        canvas.drawCircle(centerX, circleHeigh, inSideRadius, insidePaint);
+        drawWave(canvas);
+
 
 
     }
 
+    public int dip2px(Context context, float dpValue) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dpValue * scale + 0.5f);
+    }
+
+
+    public int px2dip(Context context, float pxValue) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (pxValue / scale + 0.5f);
+    }
 
     private void drawLine(Canvas canvas) {
-
-        canvas.drawLine(centerX, outRadius * 2 , centerX,  outRadius * 2 + lineHeight , linePaint);
+        canvas.drawLine(centerX, circleHeigh * 2, centerX, circleHeigh * 2 + lineHeight, linePaint);
 
     }
 
 
     private void drawWave(Canvas canvas) {
 
-        canvas.drawCircle(centerX , outRadius * 2 + lineHeight , waveRadius , wavePaint);
+        canvas.drawCircle(centerX, outRadius * 2 + lineHeight, waveRadius, wavePaint);
 
     }
 
+    ValueAnimator valueAnimator;
+
     public void startAnimation() {
-
-        final ValueAnimator valueAnimator = ValueAnimator.ofInt(outRadius / 4 , outRadius - 10);
-
+        if (valueAnimator!=null&&valueAnimator.isRunning()) {
+            return;
+        }
+        valueAnimator = ValueAnimator.ofInt(outRadius / 4, outRadius - 10);
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 inSideRadius = (int) animation.getAnimatedValue();
                 invalidate();
-                Log.d(LocationView.class.getSimpleName(),"动画的值 " + String.valueOf(animation.getAnimatedValue()));
+                Log.d(LocationView.class.getSimpleName(), "动画的值 " + String.valueOf(animation.getAnimatedValue()));
             }
 
         });
@@ -166,6 +218,7 @@ public class LocationView extends View {
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
                 startInsideAnimation();
+
             }
 
 
@@ -174,10 +227,34 @@ public class LocationView extends View {
         valueAnimator.start();
     }
 
+    private void startJump() {
+        ValueAnimator valueAnimator = ValueAnimator.ofInt(circleHeigh,circleHeigh - 25, circleHeigh);
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                circleHeigh = (int) animation.getAnimatedValue();
+                Log.d("deling", "circleHeigh动画的值 " + String.valueOf(animation.getAnimatedValue()));
+                invalidate();
+            }
+        });
+        valueAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+            }
+
+            @Override
+            public void onAnimationStart(Animator animation) {
+                super.onAnimationStart(animation);
+            }
+        });
+
+        ValueAnimator.setFrameDelay(1000);
+        valueAnimator.start();
+    }
 
     public void startInsideAnimation() {
-
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(outRadius - 10 , outRadius / 4);
+        ValueAnimator valueAnimator = ValueAnimator.ofInt(outRadius - 10, outRadius / 4);
 
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -191,6 +268,7 @@ public class LocationView extends View {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
+                startJump();
             }
 
             @Override
@@ -207,7 +285,7 @@ public class LocationView extends View {
 
     public void startWaveAnimation() {
 
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(waveRadius , waveRadius * 2);
+        ValueAnimator valueAnimator = ValueAnimator.ofInt(waveRadius, waveRadius * 2);
 
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -237,7 +315,7 @@ public class LocationView extends View {
 
     public void startWaveColorAnimation() {
 
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(100 , 0);
+        ValueAnimator valueAnimator = ValueAnimator.ofInt(100, 0);
 
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -263,7 +341,6 @@ public class LocationView extends View {
         ValueAnimator.setFrameDelay(1000);
         valueAnimator.start();
     }
-
 
 
 }
