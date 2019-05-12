@@ -23,19 +23,23 @@ public class LocationView extends View {
     private int outColor;
     private int insideColor;
     private int lineColor;
-    private int during;
+    private int jumpStyle;
+    private int zoomStyle;
     private int DEFAULT_DURING = 1000;
+    private boolean waterWave = true;
+
     private Paint outPaint;
     private Paint insidePaint;
     private Paint linePaint;
     private Paint wavePaint;
     private int outRadius;
-    private int circleHeigh;
     private int inSideRadius;
     private int waveRadius = 100;
     private int centerX;
     private int centerY;
     private int lineHeight = 150;
+
+    private final double goldenSection = 0.618;
 
 
     public LocationView(Context context) {
@@ -74,17 +78,28 @@ public class LocationView extends View {
                             .requireNonNull(typedArray.getColorStateList(i))
                             .getColorForState(getDrawableState(), 0);
                     break;
-                case R.styleable.LocationView_during:
-                    during = typedArray.getInt(i, DEFAULT_DURING);
+
+                case R.styleable.LocationView_waterWave:
+                    waterWave = typedArray.getBoolean(i, waterWave);
+                    break;
+                case R.styleable.LocationView_jumpStyle:
+                    jumpStyle = typedArray.getInt(i, context.getResources().getInteger(R.integer.DIDI));
+                    break;
+
+                case R.styleable.LocationView_zoomStyle:
+                    zoomStyle = typedArray.getInt(i, context.getResources().getInteger(R.integer.MO_BAI));
+                    break;
+                default:
                     break;
             }
-
         }
-
         initPaint();
     }
 
 
+    /**
+     * 初始化画笔
+     */
     private void initPaint() {
         outPaint = new Paint();
         insidePaint = new Paint();
@@ -102,101 +117,118 @@ public class LocationView extends View {
         wavePaint.setAlpha(100);
     }
 
+    private int lineStarY;
+    private int lineEndY;
+    private int waveMaxRadius;
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        outRadius = w / 2;
+
+        outRadius = (int) (w / 4 * goldenSection);
+        waveRadius = (int) (outRadius * goldenSection);
+        waveMaxRadius = (int) (w * goldenSection);
+
         inSideRadius = outRadius / 4;
         centerX = w / 2;
         centerY = h / 2;
-        circleHeigh = w / 2;
+        lineHeight = (int) (w * goldenSection);
+        lineStarY = centerX + getPaddingTop();
+        lineEndY = centerX + getPaddingTop() + lineHeight;
     }
+
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int width = measureWidth(getSuggestedMinimumWidth(), widthMeasureSpec);
-        int height = measureHeight(getSuggestedMinimumHeight(), heightMeasureSpec);
+
+        int withMode = MeasureSpec.getMode(widthMeasureSpec);
+        int withSpecSize = MeasureSpec.getSize(widthMeasureSpec);
+
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int heightSpecSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        int width;
+        int height;
+
+        if (withMode == MeasureSpec.AT_MOST && heightMode == MeasureSpec.AT_MOST) {
+            width = dip2px(getContext(), 120);
+            height = (int) (width / goldenSection);
+        }else if (withMode == MeasureSpec.AT_MOST && heightMode == MeasureSpec.EXACTLY){
+            height = heightSpecSize;
+            width = (int) (height * goldenSection);
+        }else if (heightMode == MeasureSpec.AT_MOST && withMode == MeasureSpec.EXACTLY) {
+            width = withSpecSize;
+            height = (int) (width / goldenSection);
+        }else {
+            width = withSpecSize;
+            height = heightSpecSize;
+        }
+
         setMeasuredDimension(width, height);
     }
 
-    private int measureWidth(int defaultWidth, int measereSpec) {
-        int specMode = MeasureSpec.getMode(measereSpec);
-        int specSize = MeasureSpec.getSize(measereSpec);
-        switch (specMode) {
-            case MeasureSpec.AT_MOST:
-                defaultWidth = dip2px(getContext(), 150);
-                break;
-            case MeasureSpec.EXACTLY:
-                defaultWidth = specSize;
-                break;
-            case MeasureSpec.UNSPECIFIED:
-                defaultWidth = Math.max(defaultWidth, specSize);
-                break;
-        }
-        return defaultWidth;
-    }
 
-    private int measureHeight(int defaultHeight, int measereSpec) {
-        int specMode = MeasureSpec.getMode(measereSpec);
-        int specSize = MeasureSpec.getSize(measereSpec);
-        switch (specMode) {
-            case MeasureSpec.AT_MOST:
-                defaultHeight = dip2px(getContext(), 250);
-                break;
-            case MeasureSpec.EXACTLY:
-                defaultHeight = specSize;
-                break;
-            case MeasureSpec.UNSPECIFIED:
-                defaultHeight = Math.max(defaultHeight, specSize);
-                break;
-        }
-        return defaultHeight;
-    }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
         drawLine(canvas);
-        canvas.drawCircle(centerX, circleHeigh, outRadius, outPaint);
-        canvas.drawCircle(centerX, circleHeigh, inSideRadius, insidePaint);
+
+        canvas.drawCircle(centerX + getPaddingLeft(), centerX + getPaddingTop(), outRadius, outPaint);
+        canvas.drawCircle(centerX + getPaddingLeft(), centerX + getPaddingTop(),  inSideRadius, insidePaint);
+
         drawWave(canvas);
-
-
-
     }
+
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+    }
+
 
     public int dip2px(Context context, float dpValue) {
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
 
+//    public int px2dip(Context context, float pxValue) {
+//        final float scale = context.getResources().getDisplayMetrics().density;
+//        return (int) (pxValue / scale + 0.5f);
+//    }
 
-    public int px2dip(Context context, float pxValue) {
-        final float scale = context.getResources().getDisplayMetrics().density;
-        return (int) (pxValue / scale + 0.5f);
-    }
-
+    /**
+     * 画线
+     * @param canvas
+     */
     private void drawLine(Canvas canvas) {
-        canvas.drawLine(centerX, circleHeigh * 2, centerX, circleHeigh * 2 + lineHeight, linePaint);
-
+        canvas.drawLine(centerX + getPaddingLeft(), lineStarY,
+                centerX + getPaddingLeft(), lineEndY, linePaint);
     }
 
-
+    /**
+     * 绘制水波纹
+     * @param canvas
+     */
     private void drawWave(Canvas canvas) {
 
-        canvas.drawCircle(centerX, outRadius * 2 + lineHeight, waveRadius, wavePaint);
+        canvas.drawCircle(centerX + getPaddingLeft(), lineEndY, waveRadius, wavePaint);
 
     }
 
-    ValueAnimator valueAnimator;
+    ValueAnimator outValueAnimator;
 
-    public void startAnimation() {
-        if (valueAnimator!=null&&valueAnimator.isRunning()) {
+    /**
+     * 开始外圆动画
+     */
+    public void startOutAnimation() {
+        if (outValueAnimator!=null&&outValueAnimator.isRunning()) {
             return;
         }
-        valueAnimator = ValueAnimator.ofInt(outRadius / 4, outRadius - 10);
-        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+        outValueAnimator = ValueAnimator.ofInt(outRadius / 4, outRadius - 10);
+        outValueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 inSideRadius = (int) animation.getAnimatedValue();
@@ -206,56 +238,56 @@ public class LocationView extends View {
 
         });
 
-        valueAnimator.addListener(new AnimatorListenerAdapter() {
+        outValueAnimator.addListener(new AnimatorListenerAdapter() {
 
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
-                startWaveAnimation();
+//                startWaveAnimation();
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
                 startInsideAnimation();
-
-            }
-
-
-        });
-        ValueAnimator.setFrameDelay(during);
-        valueAnimator.start();
-    }
-
-    private void startJump() {
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(circleHeigh,circleHeigh - 25, circleHeigh);
-        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                circleHeigh = (int) animation.getAnimatedValue();
-                Log.d("deling", "circleHeigh动画的值 " + String.valueOf(animation.getAnimatedValue()));
-                invalidate();
             }
         });
-        valueAnimator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-            }
-
-            @Override
-            public void onAnimationStart(Animator animation) {
-                super.onAnimationStart(animation);
-            }
-        });
-
         ValueAnimator.setFrameDelay(1000);
-        valueAnimator.start();
+        outValueAnimator.start();
     }
 
-    public void startInsideAnimation() {
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(outRadius - 10, outRadius / 4);
+//    private void startJump() {
+//        ValueAnimator valueAnimator = ValueAnimator.ofInt(circleHeigh,circleHeigh - 25, circleHeigh);
+//        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+//            @Override
+//            public void onAnimationUpdate(ValueAnimator animation) {
+//                circleHeigh = (int) animation.getAnimatedValue();
+//                Log.d("deling", "circleHeigh动画的值 " + String.valueOf(animation.getAnimatedValue()));
+//                invalidate();
+//            }
+//        });
+//        valueAnimator.addListener(new AnimatorListenerAdapter() {
+//            @Override
+//            public void onAnimationEnd(Animator animation) {
+//                super.onAnimationEnd(animation);
+//            }
+//
+//            @Override
+//            public void onAnimationStart(Animator animation) {
+//                super.onAnimationStart(animation);
+//            }
+//        });
+//
+//        ValueAnimator.setFrameDelay(1000);
+//        valueAnimator.start();
+//    }
 
+    /**
+     * 开始内圆动画
+     */
+    public void startInsideAnimation() {
+
+        ValueAnimator valueAnimator = ValueAnimator.ofInt(outRadius - 10, outRadius / 4);
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -268,7 +300,7 @@ public class LocationView extends View {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                startJump();
+//                startJump();
             }
 
             @Override
@@ -277,15 +309,18 @@ public class LocationView extends View {
             }
         });
 
-        ValueAnimator.setFrameDelay(1000);
+        ValueAnimator.setFrameDelay(800);
         valueAnimator.start();
 
     }
 
 
+    /**
+     * 开始水波纹动画
+     */
     public void startWaveAnimation() {
 
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(waveRadius, waveRadius * 2);
+        ValueAnimator valueAnimator = ValueAnimator.ofInt(waveRadius, waveMaxRadius);
 
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -307,12 +342,13 @@ public class LocationView extends View {
                 startWaveColorAnimation();
             }
         });
-
-        ValueAnimator.setFrameDelay(1000);
+        valueAnimator.setDuration(800);
         valueAnimator.start();
-
     }
 
+    /**
+     * 开始水波纹颜色动画
+     */
     public void startWaveColorAnimation() {
 
         ValueAnimator valueAnimator = ValueAnimator.ofInt(100, 0);
@@ -329,7 +365,7 @@ public class LocationView extends View {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                waveRadius = 100;
+                waveRadius = (int) (outRadius * goldenSection);
             }
 
             @Override
@@ -337,10 +373,44 @@ public class LocationView extends View {
                 super.onAnimationStart(animation);
             }
         });
-
-        ValueAnimator.setFrameDelay(1000);
+        valueAnimator.setDuration(800);
         valueAnimator.start();
     }
 
+
+    /**
+     * 滴滴风格缩放
+     */
+    public void startZoomDiDiStyleAnimation() {
+
+
+    }
+
+
+    /**
+     * 摩拜风格缩放
+     */
+    public void startZoomMoBaiStyleAnimation() {
+
+
+    }
+
+
+    /**
+     * 滴滴风格跳动
+     */
+    public void startJumpDiDiStyleAnimation() {
+
+
+    }
+
+
+    /**
+     * 通用跳动
+     */
+    public void startJumpCommonAnimation() {
+
+
+    }
 
 }

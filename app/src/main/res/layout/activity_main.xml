@@ -6,15 +6,16 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
     <me.nice.locationviewdemo.LocationView
         android:id="@+id/locationView"
-        android:layout_width="wrap_content"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
-        app:during="3000"
         app:lineColor="@color/res_md_black"
         app:insideColor="@color/res_md_white"
         app:outColor="@color/res_md_teal_300"
+        app:jumpStyle="@integer/DIDI"
+        app:zoomStyle="@integer/MO_BAI"
+        app:waterWave="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"

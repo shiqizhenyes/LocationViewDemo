@@ -5,7 +5,24 @@
         <attr name="outColor" format="color"/>
         <attr name="insideColor" format="color"/>
         <attr name="lineColor" format="color"/>
-        <attr name="during" format="integer"/>
+        <attr name="waterWave" format="boolean"/>
+        <attr name="jumpStyle" format="integer"/>
+        <attr name="zoomStyle" format="integer"/>
     </declare-styleable>
+
+
+    <integer name="DIDI">101</integer>
+    <integer name="COMMON">102</integer>
+    <integer name="MO_BAI">102</integer>
+
+    <integer-array name="jumpStyle">
+        <item>@integer/DIDI</item>
+        <item>@integer/COMMON</item>
+    </integer-array>
+
+    <integer-array name="zoomStyle">
+        <item>@integer/DIDI</item>
+        <item>@integer/MO_BAI</item>
+    </integer-array>
 
 </resources>
